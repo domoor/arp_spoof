@@ -146,8 +146,8 @@ int main(int argc, char *argv[]) {
 	arp_rep(my_mac, target_ip, sender_mac, sender_ip);
 	arp_rep(my_mac, sender_ip, target_mac, target_ip);
 
-	struct libnet_ethernet_hdr eth, *eth_p;
-	arp_hdr arp, *arp_p;
+	struct libnet_ethernet_hdr *eth_p;
+	arp_hdr *arp_p;
 	while(1) {
 		struct pcap_pkthdr* header;
 		const u_char* packet;
