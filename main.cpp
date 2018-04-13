@@ -8,8 +8,8 @@
 #include <sys/ioctl.h>			// local mac_ip
 #include <net/if.h>			// local mac_ip
 #include <unistd.h>			// [socket]close()
-#include <iostream>
-using namespace std;
+//#include <iostream>
+//using namespace std;
 
 #define INET_ADDR_LEN	4
 #define ALL_F 		"\xff\xff\xff\xff\xff\xff"
@@ -177,7 +177,6 @@ int main(int argc, char *argv[]) {
 			memcpy(eth_p->ether_dhost, sender_mac, ETHER_ADDR_LEN);
 		memcpy(eth_p->ether_shost, my_mac, ETHER_ADDR_LEN);
 		pcap_sendpacket(handle, packet, header->caplen);
-		cout<<"relay!\n";
 	}
 	pcap_close(handle);
 	return 0;
